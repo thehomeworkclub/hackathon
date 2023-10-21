@@ -20,13 +20,17 @@ def extract_features(img_path, model):
 
 
 # Directory containing whale images
-whale_dir = "/wales"
+whale_dir = "./wales"
 
 # Extracting features for each whale image and storing them in a list
 whale_features = []
 for img_file in os.listdir(whale_dir):
     img_path = os.path.join(whale_dir, img_file)
-    whale_features.append(extract_features(img_path, model_vgg16))
+    try:
+        whale_features.append(extract_features(img_path, model_vgg16))
+    except Exception as e:
+        print(f"Error processing {img_path}: {e}")
+
 
 whale_features = np.array(whale_features)
 
@@ -45,6 +49,6 @@ def contains_whale(input_img_path, model, stored_features, threshold=0.5):
 
 # Test
 if __name__ == "__main__":
-    img_path = "path_to_test_image.jpg"
+    img_path = "testingtiger.jpeg"
     result = contains_whale(img_path, model_vgg16, whale_features)
     print(result)
