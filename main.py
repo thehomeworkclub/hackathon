@@ -31,7 +31,6 @@ for img_file in os.listdir(whale_dir):
     except Exception as e:
         print(f"Error processing {img_path}: {e}")
 
-
 whale_features = np.array(whale_features)
 
 
@@ -47,8 +46,22 @@ def contains_whale(input_img_path, model, stored_features, threshold=0.5):
     return False
 
 
-# Test
+def check_for_whale(img_path):
+    try:
+        return contains_whale(img_path, model_vgg16, whale_features)
+    except Exception as e:
+        print(f"Error processing {img_path}: {e}")
+        return False
+
+
 if __name__ == "__main__":
-    img_path = "testingtiger.jpeg"
-    result = contains_whale(img_path, model_vgg16, whale_features)
-    print(result)
+    while True:
+        try:
+            img_path = input(
+                "Please enter the path to the image (or type 'exit' to stop): ")
+            if img_path.lower() == 'exit':
+                break
+            result = check_for_whale(img_path)
+            print(result)
+        except Exception as e:
+            print(f"Error: {e}")
