@@ -1,73 +1,50 @@
-import cv2
+import os
 import numpy as np
-import tensorflow as tf
-from object_detection.utils import label_map_util
-from object_detection.utils import visualization_utils as viz_utils
+from keras.preprocessing import image
+from keras.applications.vgg16 import VGG16, preprocess_input
+from scipy.spatial import distance
 
-# Load pre-trained model and labels
-PATH_TO_MODEL_DIR = 'saved_model'
-PATH_TO_LABELS = 'mscoco_label_map.pbtxt'
+# Load the VGG16 model pre-trained on ImageNet data
+model_vgg16 = VGG16(weights='imagenet', include_top=False)
 
-detect_fn = tf.saved_model.load(PATH_TO_MODEL_DIR)
+# Function to extract features from an image
 
-category_index = label_map_util.create_category_index_from_labelmap(PATH_TO_LABELS, use_display_name=True)
 
-def detect_objects(image_np):
-    # Convert image to tensor
-    input_tensor = tf.convert_to_tensor(image_np)
-    input_tensor = input_tensor[tf.newaxis, ...]
+def extract_features(img_path, model):
+    img = image.load_img(img_path, target_size=(224, 224))
+    img_array = image.img_to_array(img)
+    expanded_img_array = np.expand_dims(img_array, axis=0)
+    preprocessed_img = preprocess_input(expanded_img_array)
+    features = model.predict(preprocessed_img)
+    return features.flatten()
 
-    detections = detect_fn(input_tensor)
-    num_detections = int(detections.pop('num_detections'))
-    detections = {key: value[0, :num_detections].numpy()
-                  for key, value in detections.items()}
-    detections['num_detections'] = num_detections
 
-    # Convert detection classes to ints
-    detections['detection_classes'] = detections['detection_classes'].astype(np.int64)
+# Directory containing whale images
+whale_dir = "path_to_whale_folder"
 
-    # Overlay the bounding boxes on the image
-    image_np_with_detections = image_np.copy()
-    viz_utils.visualize_boxes_and_labels_on_image_array(
-        image_np_with_detections,
-        detections['detection_boxes'],
-        detections['detection_classes'],
-        detections['detection_scores'],
-        category_index,
-        use_normalized_coordinates=True,
-        max_boxes_to_draw=200,
-        min_score_thresh=.30,
-        agnostic_mode=False)
+# Extracting features for each whale image and storing them in a list
+whale_features = []
+for img_file in os.listdir(whale_dir):
+    img_path = os.path.join(whale_dir, img_file)
+    whale_features.append(extract_features(img_path, model_vgg16))
 
-    return image_np_with_detections
+whale_features = np.array(whale_features)
 
-# Live stream from webcam
-video_capture = cv2.VideoCapture(0)
 
-while True:
-    ret, frame = video_capture.read()
-    if not ret:
-        break
+def contains_whale(input_img_path, model, stored_features, threshold=0.5):
+    input_features = extract_features(input_img_path, model)
 
-    # Detect objects in the frame
-    frame_with_detections = detect_objects(frame)
+    # Compute distances between input features and stored features
+    distances = np.linalg.norm(stored_features - input_features, axis=1)
 
-    # Display the resulting frame with detections
-    cv2.imshow('Object Detection', frame_with_detections)
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
+    # If minimum distance is below threshold, the image contains a whale
+    if np.min(distances) < threshold:
+        return True
+    return False
 
-video_capture.release()
-cv2.destroyAllWindows()
 
-# Detect objects in images from a folder
-IMAGE_FOLDER_PATH = '/images'
-
-for image_name in os.listdir(IMAGE_FOLDER_PATH):
-    image_path = os.path.join(IMAGE_FOLDER_PATH, image_name)
-    image_np = cv2.imread(image_path)
-    image_np_with_detections = detect_objects(image_np)
-    cv2.imshow('Object Detection in Image', image_np_with_detections)
-    cv2.waitKey(0)
-
-cv2.destroyAllWindows()
+# Test
+if __name__ == "__main__":
+    img_path = "path_to_test_image.jpg"
+    result = contains_whale(img_path, model_vgg16, whale_features)
+    print(result)
