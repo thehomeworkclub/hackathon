@@ -20,7 +20,7 @@ def extract_features(img_path, model):
 
 
 # Directory containing whale images
-whale_dir = "path_to_whale_folder"
+whale_dir = "/wales"
 
 # Extracting features for each whale image and storing them in a list
 whale_features = []
