@@ -128,12 +128,12 @@
           success: function (data) {
             if (data.success == true && data.data == true) {
               document.getElementById("checker").innerHTML =
-                "<p class='text-3xl'>This is a whale!</p>";
+                "<span class='material-symbols-outlined'>check_circle</span><p class='text-3xl'>This is a whale!</p>";
               document.getElementById("checkerbox").classList.remove("hidden");
               document.getElementById("form11").classList.add("hidden");
             } else {
               document.getElementById("checker").innerHTML =
-                "<p class='text-3xl'>This is not a whale!</p>";
+                "<span class='material-symbols-outlined'>check_circle</span><br><p class='text-3xl'>This is not a whale!</p>";
               document.getElementById("checkerbox").classList.remove("hidden");
             }
           },
