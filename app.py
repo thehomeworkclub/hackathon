@@ -7,6 +7,7 @@ from scipy.spatial import distance
 
 model_vgg16 = VGG16(weights='imagenet', include_top=False)
 
+
 def extract_features(img_path, model):
     img = image.load_img(img_path, target_size=(224, 224))
     img_array = image.img_to_array(img)
@@ -42,23 +43,31 @@ def contains_whale(input_img_path, model, stored_features, threshold=0.5):
         return True
     return False
 
+
 def check_for_whale(img_path):
     try:
         return contains_whale(img_path, model_vgg16, whale_features)
     except Exception as e:
         print(f"Error processing {img_path}: {e}")
         return False
+
+
 app = Flask(__name__)
+
 
 @app.route('/')
 def index():
     return render_template('index.html')
-@app.route('/predict',methods=['POST'])
+
+
+@app.route('/predict', methods=['POST'])
 def predict():
     req = request.files['image']
     req.save('./static/img.jpg')
     imgrtn = check_for_whale('./static/img.jpg')
     print(imgrtn)
     return {"success": True, "data": imgrtn}
+
+
 if __name__ == "__main__":
     app.run(debug=True)
