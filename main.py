@@ -55,20 +55,14 @@ def prepare_data_pairs(folder):
     return np.array(images)
 
 
-def create_pairs(whale_data, non_whale_data, num_pairs=1000):
+def create_positive_pairs(whale_data, num_pairs=1000):
     pairs = []
     labels = []
 
-    for _ in range(num_pairs // 2):
+    for _ in range(num_pairs):
         idx1, idx2 = np.random.choice(len(whale_data), 2, replace=False)
         pairs.append([whale_data[idx1], whale_data[idx2]])
         labels.append(1)
-
-    for _ in range(num_pairs // 2):
-        idx1 = np.random.choice(len(whale_data))
-        idx2 = np.random.choice(len(non_whale_data))
-        pairs.append([whale_data[idx1], non_whale_data[idx2]])
-        labels.append(0)
 
     return np.array(pairs), np.array(labels)
 
@@ -77,7 +71,8 @@ whale_data = prepare_data_pairs('./wales/whale')
 # Assuming you have this directory
 non_whale_data = prepare_data_pairs('./wales/non_whale')
 
-pairs, labels = create_pairs(whale_data, non_whale_data)
+pairs, labels = create_positive_pairs(whale_data)
+
 
 # Train the model
 siamese_net.fit([pairs[:, 0], pairs[:, 1]], labels, epochs=10, batch_size=16)
