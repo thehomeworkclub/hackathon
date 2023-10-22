@@ -1,57 +1,77 @@
 import os
 import numpy as np
-from keras.preprocessing import image
 from keras.applications.vgg16 import VGG16, preprocess_input
-from scipy.spatial import distance
+from keras.models import Model
+from keras.layers import Dense, GlobalAveragePooling2D, Dropout
+from keras.optimizers import Adam
+from keras.preprocessing.image import ImageDataGenerator
+from keras.preprocessing import image
+from keras.callbacks import EarlyStopping
 
-# Load the VGG16 model pre-trained on ImageNet data
-model_vgg16 = VGG16(weights='imagenet', include_top=False)
+# Load VGG16 without the top classification layers
+base_model = VGG16(weights='imagenet', include_top=False)
 
-# Function to extract features from an image
+# Add custom layers
+x = base_model.output
+x = GlobalAveragePooling2D()(x)
+x = Dense(1024, activation='relu')(x)
+x = Dropout(0.5)(x)  # Add dropout
+predictions = Dense(2, activation='softmax')(x)
+model = Model(inputs=base_model.input, outputs=predictions)
+
+# Freeze VGG16 layers
+for layer in base_model.layers:
+    layer.trainable = False
+
+model.compile(optimizer=Adam(lr=0.0001),
+              loss='categorical_crossentropy', metrics=['accuracy'])
+
+# Data Augmentation
+datagen = ImageDataGenerator(
+    rotation_range=20,
+    width_shift_range=0.2,
+    height_shift_range=0.2,
+    horizontal_flip=True,
+    validation_split=0.2,
+    preprocessing_function=preprocess_input
+)
+
+train_generator = datagen.flow_from_directory(
+    './wales',
+    target_size=(224, 224),
+    batch_size=32,
+    class_mode='categorical',
+    subset='training'
+)
+
+validation_generator = datagen.flow_from_directory(
+    './wales',
+    target_size=(224, 224),
+    batch_size=32,
+    class_mode='categorical',
+    subset='validation'
+)
+
+# Early stopping callback
+early_stop = EarlyStopping(
+    monitor='val_loss', patience=5, restore_best_weights=True)
+
+model.fit_generator(
+    train_generator,
+    epochs=10,
+    validation_data=validation_generator,
+    callbacks=[early_stop]  # Add early stopping callback
+)
 
 
-def extract_features(img_path, model):
-    img = image.load_img(img_path, target_size=(224, 224))
+def contains_whale(input_img_path, model):
+    img = image.load_img(input_img_path, target_size=(224, 224))
     img_array = image.img_to_array(img)
     expanded_img_array = np.expand_dims(img_array, axis=0)
     preprocessed_img = preprocess_input(expanded_img_array)
-    features = model.predict(preprocessed_img)
-    return features.flatten()
-
-
-# Directory containing whale images
-whale_dir = "./wales"
-
-# Extracting features for each whale image and storing them in a list
-whale_features = []
-for img_file in os.listdir(whale_dir):
-    img_path = os.path.join(whale_dir, img_file)
-    try:
-        whale_features.append(extract_features(img_path, model_vgg16))
-    except Exception as e:
-        print(f"Error processing {img_path}: {e}")
-
-whale_features = np.array(whale_features)
-
-
-def contains_whale(input_img_path, model, stored_features, threshold=0.5):
-    input_features = extract_features(input_img_path, model)
-
-    # Compute distances between input features and stored features
-    distances = np.linalg.norm(stored_features - input_features, axis=1)
-
-    # If minimum distance is below threshold, the image contains a whale
-    if np.min(distances) < threshold:
-        return True
-    return False
-
-
-def check_for_whale(img_path):
-    try:
-        return contains_whale(img_path, model_vgg16, whale_features)
-    except Exception as e:
-        print(f"Error processing {img_path}: {e}")
-        return False
+    prediction = model.predict(preprocessed_img)
+    # Assuming whale class is 1 and no-whale is 0
+    return prediction[0][1] > 0.5
 
 
 if __name__ == "__main__":
@@ -61,7 +81,7 @@ if __name__ == "__main__":
                 "Please enter the path to the image (or type 'exit' to stop): ")
             if img_path.lower() == 'exit':
                 break
-            result = check_for_whale(img_path)
+            result = contains_whale(img_path, model)
             print(result)
         except Exception as e:
             print(f"Error: {e}")
