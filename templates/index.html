@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-theme="dark">
+<html data-theme="light">
   <head>
     <link
       href="https://cdn.jsdelivr.net/npm/daisyui@3.9.3/dist/full.css"
@@ -43,7 +43,7 @@
   </head>
   <header></header>
 
-  <body class="h-screen text-white bg-base-300">
+  <body class="h-screen text-black bg-base-100">
     <div class="h-full flex flex-col justify-center items-center">
       <h1 class="text-8xl font-bold" style="margin-bottom: 15px">
         Whale Detector
@@ -128,12 +128,12 @@
           success: function (data) {
             if (data.success == true && data.data == true) {
               document.getElementById("checker").innerHTML =
-                "<span class='material-symbols-outlined'>check_circle</span><p class='text-3xl'>This is a whale!</p>";
+                "<p class='text-3xl'>This is a whale!</p>";
               document.getElementById("checkerbox").classList.remove("hidden");
               document.getElementById("form11").classList.add("hidden");
             } else {
               document.getElementById("checker").innerHTML =
-                "<span class='material-symbols-outlined'>check_circle</span><br><p class='text-3xl'>This is not a whale!</p>";
+                "<p class='text-3xl'>This is not a whale!</p>";
               document.getElementById("checkerbox").classList.remove("hidden");
             }
           },
